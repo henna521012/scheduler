@@ -32,55 +32,42 @@
             border: 1.5px solid transparent;
         }
         
-        /* 檢視模式：有人填過的樣式 */
         .day.has-event { background-color: var(--accent-soft); }
-        /* 選取中：黑色圓框 */
-        .day.active-view { border-color: #333; font-weight: bold; }
-
+        .day.active-view { border: 1.5px solid #333 !important; font-weight: bold; }
         .day.empty { cursor: default; }
 
         .details-section { border-top: 1px solid #ccc; padding-top: 20px; margin-top: 10px; width: 100%; }
         .day-display { font-size: 40px; font-weight: 300; margin-bottom: 20px; }
 
-        /* 內嵌按鈕樣式 */
+        .time-slots-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+        .time-pill { background: var(--accent-soft); padding: 5px 14px; border-radius: 20px; font-size: 12px; color: #555; font-weight: 500; }
+
         .time-option-container { display: flex; gap: 10px; margin-top: 10px; }
         .time-btn {
             background: #fff; border: 1.5px solid var(--accent-soft);
             padding: 8px 16px; border-radius: 20px; font-size: 14px;
             color: var(--text-main); cursor: pointer; transition: 0.2s;
         }
-        .time-btn.selected {
-            background: var(--accent-soft);
-            border-color: var(--accent-soft);
-            font-weight: bold;
-        }
+        .time-btn.selected { background: var(--accent-soft); border-color: var(--accent-soft); font-weight: bold; }
 
         .btn-fixed { position: fixed; bottom: 30px; width: calc(100% - 40px); max-width: 360px; z-index: 10; }
-        .main-action-btn {
-            width: 100%; padding: 16px; background: #333; color: white;
-            border: none; border-radius: 5px; font-size: 14px; letter-spacing: 1px;
-            cursor: pointer; font-weight: bold;
-        }
+        .main-action-btn { width: 100%; padding: 16px; background: #333; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; }
 
-        /* 彈出視窗樣式 */
         #customTimePicker {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: white; padding: 25px; border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: none; z-index: 1001;
-            width: 85%; max-width: 320px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: none; z-index: 1001; width: 85%; max-width: 320px;
         }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; z-index: 1000; }
-        
         .picker-title { font-weight: bold; font-size: 18px; margin-bottom: 20px; text-align: center; }
         .time-row { display: flex; align-items: center; margin-bottom: 15px; font-size: 16px; justify-content: space-between; }
-        .time-row span { color: #666; width: 60px; }
         .select-group { display: flex; align-items: center; gap: 5px; }
         select { padding: 8px; border-radius: 5px; border: 1px solid #ddd; font-size: 15px; }
     </style>
 </head>
 <body>
 
-<div class="overlay" id="overlay"></div>
+<div class="overlay" id="overlay" onclick="closePicker()"></div>
 
 <div class="container">
     <div class="month-header">April</div>
@@ -88,15 +75,15 @@
 
     <div class="calendar-grid" id="calendar">
         <div class="weekday">Mon</div><div class="weekday">Tue</div><div class="weekday">Wed</div>
-        <div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
+        <div class="weekday = 'Thu'">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
         <div class="weekday">Sun</div>
     </div>
 
     <div class="details-section" id="detailsArea">
         <div class="day-display" id="selectedDateLabel">1</div>
         
-        <div id="editOptions" style="display:none;">
-            <p style="font-size:14px; color:#888;">設定這天你有空的時間：</p>
+        <div id="editWrapper" style="display:none;">
+            <p id="editHintLabel" style="font-size:14px; color:#888;">設定這天你有空的時間：</p>
             <div class="time-option-container" id="optionBtns">
                 <div id="btnFull" class="time-btn" onclick="toggleFullDay()">全天</div>
                 <div id="btnCustom" class="time-btn" onclick="openPicker()">自訂時間</div>
@@ -104,9 +91,7 @@
             <p id="timeStatus" style="font-size:13px; color:var(--accent-dark); margin-top:15px; font-weight:500;"></p>
         </div>
 
-        <div id="viewContent">
-            <p style="color:#bbb; font-size:14px;">點擊 EDIT 開始編輯</p>
-        </div>
+        <div id="viewContent"></div>
     </div>
 
     <div class="btn-fixed">
@@ -116,47 +101,28 @@
 
 <div id="customTimePicker">
     <div class="picker-title">自訂時間</div>
-    
-    <div class="time-row">
-        <span>BEGIN</span>
-        <div class="select-group">
-            <select id="sh"></select> 點 <select id="sm"></select> 分
-        </div>
-    </div>
-    
-    <div class="time-row">
-        <span>END</span>
-        <div class="select-group">
-            <select id="eh"></select> 點 <select id="em"></select> 分
-        </div>
-    </div>
-
+    <div class="time-row"><span>BEGIN</span><div class="select-group"><select id="sh"></select> 點 <select id="sm"></select> 分</div></div>
+    <div class="time-row"><span>END</span><div class="select-group"><select id="eh"></select> 點 <select id="em"></select> 分</div></div>
     <div style="margin-top:25px; display:flex; gap:10px;">
-        <button onclick="saveCustomTime()" style="flex:1; padding:12px; background:#333; color:#fff; border:none; border-radius:5px; font-size:14px;">確定</button>
-        <button onclick="closePicker()" style="flex:1; padding:12px; background:#eee; color:#333; border:none; border-radius:5px; font-size:14px;">取消</button>
+        <button onclick="saveCustomTime()" style="flex:1; padding:12px; background:#333; color:#fff; border:none; border-radius:5px;">確定</button>
+        <button onclick="closePicker()" style="flex:1; padding:12px; background:#eee; color:#333; border:none; border-radius:5px;">取消</button>
     </div>
 </div>
 
 <script>
     let isEditMode = false;
     let viewingDate = 1;
-    let mySchedule = {}; // { 11: "全天", 12: "08:30-21:45" }
+    let mySchedule = {}; 
+    const mockData = {
+        3: [{name: "函庭", time: ["全天"]}, {name: "成員 A", time: ["08:30-10:00", "14:00-17:00"]}],
+        12: [{name: "成員 B", time: ["全天"]}],
+        24: [{name: "成員 C", time: ["19:00-22:00"]}]
+    };
 
-    // 初始化下拉選單
-    const sh = document.getElementById('sh'), sm = document.getElementById('sm');
-    const eh = document.getElementById('eh'), em = document.getElementById('em');
-    
-    for(let i=0; i<24; i++) {
-        let val = i.toString().padStart(2, '0');
-        sh.innerHTML += `<option value="${val}">${val}</option>`;
-        eh.innerHTML += `<option value="${val}">${val}</option>`;
-    }
-    for(let i=0; i<60; i+=15) { // 以 15 分鐘為單位
-        let val = i.toString().padStart(2, '0');
-        sm.innerHTML += `<option value="${val}">${val}</option>`;
-        em.innerHTML += `<option value="${val}">${val}</option>`;
-    }
-    sh.value = "08"; sm.value = "30"; eh.value = "21"; em.value = "45";
+    const sh=document.getElementById('sh'), sm=document.getElementById('sm'), eh=document.getElementById('eh'), em=document.getElementById('em');
+    for(let i=0;i<24;i++){ let v=i.toString().padStart(2,'0'); sh.innerHTML+=`<option value="${v}">${v}</option>`; eh.innerHTML+=`<option value="${v}">${v}</option>`; }
+    for(let i=0;i<60;i+=15){ let v=i.toString().padStart(2,'0'); sm.innerHTML+=`<option value="${v}">${v}</option>`; em.innerHTML+=`<option value="${v}">${v}</option>`; }
+    sh.value="08"; sm.value="30"; eh.value="21"; em.value="45";
 
     function renderCalendar() {
         const calendarEl = document.getElementById('calendar');
@@ -164,103 +130,82 @@
         calendarEl.innerHTML = '';
         headers.forEach(h => calendarEl.appendChild(h));
 
-        for (let s = 0; s < 2; s++) {
-            const d = document.createElement('div'); d.className = 'day empty';
-            calendarEl.appendChild(d);
-        }
+        for (let s = 0; s < 2; s++) { calendarEl.appendChild(Object.assign(document.createElement('div'), {className: 'day empty'})); }
 
         for (let i = 1; i <= 30; i++) {
             const d = document.createElement('div');
-            d.className = 'day';
-            d.innerText = i;
-            
-            // 規則 2: 黑色圓框留著
-            if (i === viewingDate && (isEditMode || !isEditMode)) d.classList.add('active-view');
-            // 規則 1: 已有資料或編輯中已選取的日期
-            if (!isEditMode && [3, 12, 13].includes(i)) d.classList.add('has-event');
+            d.className = 'day'; d.innerText = i;
+            if (i === viewingDate) d.classList.add('active-view');
+            if (!isEditMode && mockData[i]) d.classList.add('has-event');
             if (isEditMode && mySchedule[i]) d.classList.add('has-event');
 
             d.onclick = () => {
-                // 規則 3: 取消再按一次
                 if (isEditMode && viewingDate === i && mySchedule[i]) {
-                    delete mySchedule[i];
+                    delete mySchedule[i]; // 再次點擊取消
                 } else {
                     viewingDate = i;
-                    // 規則 1: 只要點到，預設全天大地色填滿
-                    if (isEditMode && !mySchedule[i]) {
-                        mySchedule[i] = "全天";
-                    }
+                    if (isEditMode && !mySchedule[i]) mySchedule[i] = "全天";
                 }
                 document.getElementById('selectedDateLabel').innerText = viewingDate;
-                if (isEditMode) updateEditUI();
+                isEditMode ? updateEditUI() : updateViewUI(viewingDate);
                 renderCalendar();
             };
             calendarEl.appendChild(d);
         }
     }
 
+    function updateViewUI(date) {
+        const content = document.getElementById('viewContent');
+        const data = mockData[date];
+        if (!data) { content.innerHTML = `<p style="color:#bbb; font-size:14px;">這天暫時沒人回報～</p>`; return; }
+        content.innerHTML = data.map(user => `
+            <div style="margin-bottom:15px;">
+                <div style="font-weight:500;">${user.name} 有空</div>
+                <div class="time-slots-container">${user.time.map(t => `<div class="time-pill">${t}</div>`).join('')}</div>
+            </div>
+        `).join('');
+    }
+
     function updateEditUI() {
         const status = mySchedule[viewingDate];
+        const editWrapper = document.getElementById('editWrapper');
+        const statusText = document.getElementById('timeStatus');
         const btnFull = document.getElementById('btnFull');
         const btnCustom = document.getElementById('btnCustom');
-        const statusText = document.getElementById('timeStatus');
-        const options = document.getElementById('optionBtns');
 
         if (!status) {
-            options.style.visibility = "hidden"; // 規則 3: 下面選項要不見
-            statusText.innerText = "";
+            editWrapper.style.display = "none"; // 規則：取消選取後整個標籤都要不見
             return;
         }
 
-        options.style.visibility = "visible";
+        editWrapper.style.display = "block";
         btnFull.classList.toggle('selected', status === "全天");
         btnCustom.classList.toggle('selected', status !== "全天");
-        statusText.innerText = status === "全天" ? "當前設定：全天有空" : `當前設定：${status}`;
+        statusText.innerText = `當前設定：${status}`;
     }
 
-    function toggleFullDay() {
-        mySchedule[viewingDate] = "全天";
-        updateEditUI();
-        renderCalendar();
-    }
-
-    function openPicker() {
-        document.getElementById('customTimePicker').style.display = 'block';
-        document.getElementById('overlay').style.display = 'block';
-    }
-
-    function closePicker() {
-        document.getElementById('customTimePicker').style.display = 'none';
-        document.getElementById('overlay').style.display = 'none';
-    }
-
-    function saveCustomTime() {
-        const timeStr = `${sh.value}:${sm.value}-${eh.value}:${em.value}`;
-        mySchedule[viewingDate] = timeStr;
-        closePicker();
-        updateEditUI();
-        renderCalendar();
-    }
+    function toggleFullDay() { mySchedule[viewingDate] = "全天"; updateEditUI(); renderCalendar(); }
+    function openPicker() { document.getElementById('customTimePicker').style.display = 'block'; document.getElementById('overlay').style.display = 'block'; }
+    function closePicker() { document.getElementById('customTimePicker').style.display = 'none'; document.getElementById('overlay').style.display = 'none'; }
+    function saveCustomTime() { mySchedule[viewingDate] = `${sh.value}:${sm.value}-${eh.value}:${em.value}`; closePicker(); updateEditUI(); renderCalendar(); }
 
     function handleBtnClick() {
         if (!isEditMode) {
             isEditMode = true;
             document.getElementById('mainBtn').innerText = "SEND SCHEDULE";
-            document.getElementById('editOptions').style.display = "block";
+            document.getElementById('editWrapper').style.display = "block";
             document.getElementById('viewContent').style.display = "none";
-            // 進入編輯模式時，預設選取當前日期
             mySchedule[viewingDate] = "全天";
             updateEditUI();
-            renderCalendar();
         } else {
             sendToLine();
         }
+        renderCalendar();
     }
 
     async function sendToLine() {
         try {
             await liff.init({ liffId: "2009607639-kKaZirpP" });
-            if (!liff.isLoggedIn()) { liff.login(); return; }
             const profile = await liff.getProfile();
             const summary = Object.entries(mySchedule).map(([d, t]) => `${d}號(${t})`).join(', ');
             await liff.sendMessages([{ type: 'text', text: `📅 [SSWT 排程更新]\n${profile.displayName} 已回報：\n${summary}` }]);
@@ -269,6 +214,7 @@
     }
 
     renderCalendar();
+    updateViewUI(1);
 </script>
 </body>
 </html>
