@@ -23,7 +23,6 @@
         .month-header { text-align: center; font-size: 32px; letter-spacing: 2px; font-weight: 300; margin: 0; }
         .year-label { text-align: right; font-size: 14px; color: #888; margin-bottom: 20px; }
 
-        /* 日曆網格 */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; text-align: center; margin-bottom: 30px; }
         .weekday { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
         
@@ -33,18 +32,17 @@
             border: 1.5px solid transparent;
         }
         
-        /* 檢視：有人有空 */
+        /* 檢視模式：有人填過的樣式 */
         .day.has-event { background-color: var(--accent-soft); }
-        /* 共通：正在查看/選取中的黑色圈圈 */
+        /* 選取中：黑色圓框 */
         .day.active-view { border-color: #333; font-weight: bold; }
 
         .day.empty { cursor: default; }
 
-        /* 下方編輯/顯示區塊 */
         .details-section { border-top: 1px solid #ccc; padding-top: 20px; margin-top: 10px; width: 100%; }
         .day-display { font-size: 40px; font-weight: 300; margin-bottom: 20px; }
 
-        /* 內嵌按鈕樣式 (大地色圓角矩形) */
+        /* 內嵌按鈕樣式 */
         .time-option-container { display: flex; gap: 10px; margin-top: 10px; }
         .time-btn {
             background: #fff; border: 1.5px solid var(--accent-soft);
@@ -57,7 +55,6 @@
             font-weight: bold;
         }
 
-        /* 底部按鈕 */
         .btn-fixed { position: fixed; bottom: 30px; width: calc(100% - 40px); max-width: 360px; z-index: 10; }
         .main-action-btn {
             width: 100%; padding: 16px; background: #333; color: white;
@@ -65,15 +62,20 @@
             cursor: pointer; font-weight: bold;
         }
 
-        /* 迷你時間選擇彈窗 */
-        #miniPicker {
+        /* 彈出視窗樣式 */
+        #customTimePicker {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: white; padding: 25px; border-radius: 15px;
             box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: none; z-index: 1001;
-            width: 80%; max-width: 300px; text-align: center;
+            width: 85%; max-width: 320px;
         }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; z-index: 1000; }
-        select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ddd; }
+        
+        .picker-title { font-weight: bold; font-size: 18px; margin-bottom: 20px; text-align: center; }
+        .time-row { display: flex; align-items: center; margin-bottom: 15px; font-size: 16px; justify-content: space-between; }
+        .time-row span { color: #666; width: 60px; }
+        .select-group { display: flex; align-items: center; gap: 5px; }
+        select { padding: 8px; border-radius: 5px; border: 1px solid #ddd; font-size: 15px; }
     </style>
 </head>
 <body>
@@ -95,11 +97,11 @@
         
         <div id="editOptions" style="display:none;">
             <p style="font-size:14px; color:#888;">設定這天你有空的時間：</p>
-            <div class="time-option-container">
-                <div id="btnFull" class="time-btn" onclick="setTime('full')">全天</div>
-                <div id="btnCustom" class="time-btn" onclick="openMiniPicker()">自訂時間</div>
+            <div class="time-option-container" id="optionBtns">
+                <div id="btnFull" class="time-btn" onclick="toggleFullDay()">全天</div>
+                <div id="btnCustom" class="time-btn" onclick="openPicker()">自訂時間</div>
             </div>
-            <p id="timeStatus" style="font-size:12px; color:var(--accent-dark); margin-top:10px;"></p>
+            <p id="timeStatus" style="font-size:13px; color:var(--accent-dark); margin-top:15px; font-weight:500;"></p>
         </div>
 
         <div id="viewContent">
@@ -112,28 +114,49 @@
     </div>
 </div>
 
-<div id="miniPicker">
-    <div style="font-weight:bold; margin-bottom:15px;">自訂時間</div>
-    <select id="startH"></select> :00 至 <select id="endH"></select> :00
-    <div style="margin-top:20px; display:flex; gap:10px;">
-        <button onclick="confirmCustomTime()" style="flex:1; padding:10px; background:#333; color:#fff; border:none; border-radius:5px;">確定</button>
-        <button onclick="closeMiniPicker()" style="flex:1; padding:10px; background:#eee; color:#333; border:none; border-radius:5px;">取消</button>
+<div id="customTimePicker">
+    <div class="picker-title">自訂時間</div>
+    
+    <div class="time-row">
+        <span>BEGIN</span>
+        <div class="select-group">
+            <select id="sh"></select> 點 <select id="sm"></select> 分
+        </div>
+    </div>
+    
+    <div class="time-row">
+        <span>END</span>
+        <div class="select-group">
+            <select id="eh"></select> 點 <select id="em"></select> 分
+        </div>
+    </div>
+
+    <div style="margin-top:25px; display:flex; gap:10px;">
+        <button onclick="saveCustomTime()" style="flex:1; padding:12px; background:#333; color:#fff; border:none; border-radius:5px; font-size:14px;">確定</button>
+        <button onclick="closePicker()" style="flex:1; padding:12px; background:#eee; color:#333; border:none; border-radius:5px; font-size:14px;">取消</button>
     </div>
 </div>
 
 <script>
     let isEditMode = false;
     let viewingDate = 1;
-    let mySchedule = {}; // { 11: "全天", 12: "08:00-10:00" }
+    let mySchedule = {}; // { 11: "全天", 12: "08:30-21:45" }
 
-    // 初始化時間下拉選單
-    const sH = document.getElementById('startH');
-    const eH = document.getElementById('endH');
+    // 初始化下拉選單
+    const sh = document.getElementById('sh'), sm = document.getElementById('sm');
+    const eh = document.getElementById('eh'), em = document.getElementById('em');
+    
     for(let i=0; i<24; i++) {
-        sH.innerHTML += `<option value="${i}">${i}</option>`;
-        eH.innerHTML += `<option value="${i}">${i}</option>`;
+        let val = i.toString().padStart(2, '0');
+        sh.innerHTML += `<option value="${val}">${val}</option>`;
+        eh.innerHTML += `<option value="${val}">${val}</option>`;
     }
-    eH.value = 23;
+    for(let i=0; i<60; i+=15) { // 以 15 分鐘為單位
+        let val = i.toString().padStart(2, '0');
+        sm.innerHTML += `<option value="${val}">${val}</option>`;
+        em.innerHTML += `<option value="${val}">${val}</option>`;
+    }
+    sh.value = "08"; sm.value = "30"; eh.value = "21"; em.value = "45";
 
     function renderCalendar() {
         const calendarEl = document.getElementById('calendar');
@@ -150,14 +173,25 @@
             const d = document.createElement('div');
             d.className = 'day';
             d.innerText = i;
-            // 無論哪種模式，正在點選的都是黑色圈圈
-            if (i === viewingDate) d.classList.add('active-view');
-            // 檢視模式下，有人填過的顯示大地色
+            
+            // 規則 2: 黑色圓框留著
+            if (i === viewingDate && (isEditMode || !isEditMode)) d.classList.add('active-view');
+            // 規則 1: 已有資料或編輯中已選取的日期
             if (!isEditMode && [3, 12, 13].includes(i)) d.classList.add('has-event');
+            if (isEditMode && mySchedule[i]) d.classList.add('has-event');
 
             d.onclick = () => {
-                viewingDate = i;
-                document.getElementById('selectedDateLabel').innerText = i;
+                // 規則 3: 取消再按一次
+                if (isEditMode && viewingDate === i && mySchedule[i]) {
+                    delete mySchedule[i];
+                } else {
+                    viewingDate = i;
+                    // 規則 1: 只要點到，預設全天大地色填滿
+                    if (isEditMode && !mySchedule[i]) {
+                        mySchedule[i] = "全天";
+                    }
+                }
+                document.getElementById('selectedDateLabel').innerText = viewingDate;
                 if (isEditMode) updateEditUI();
                 renderCalendar();
             };
@@ -170,47 +204,42 @@
         const btnFull = document.getElementById('btnFull');
         const btnCustom = document.getElementById('btnCustom');
         const statusText = document.getElementById('timeStatus');
+        const options = document.getElementById('optionBtns');
 
-        btnFull.classList.remove('selected');
-        btnCustom.classList.remove('selected');
-        statusText.innerText = "";
-
-        if (status === "全天") {
-            btnFull.classList.add('selected');
-        } else if (status) {
-            btnCustom.classList.add('selected');
-            statusText.innerText = `已設定：${status}`;
+        if (!status) {
+            options.style.visibility = "hidden"; // 規則 3: 下面選項要不見
+            statusText.innerText = "";
+            return;
         }
+
+        options.style.visibility = "visible";
+        btnFull.classList.toggle('selected', status === "全天");
+        btnCustom.classList.toggle('selected', status !== "全天");
+        statusText.innerText = status === "全天" ? "當前設定：全天有空" : `當前設定：${status}`;
     }
 
-    function setTime(type) {
-        if (type === 'full') {
-            if (mySchedule[viewingDate] === "全天") {
-                delete mySchedule[viewingDate];
-            } else {
-                mySchedule[viewingDate] = "全天";
-            }
-            updateEditUI();
-        }
+    function toggleFullDay() {
+        mySchedule[viewingDate] = "全天";
+        updateEditUI();
+        renderCalendar();
     }
 
-    function openMiniPicker() {
-        document.getElementById('miniPicker').style.display = 'block';
+    function openPicker() {
+        document.getElementById('customTimePicker').style.display = 'block';
         document.getElementById('overlay').style.display = 'block';
     }
 
-    function closeMiniPicker() {
-        document.getElementById('miniPicker').style.display = 'none';
+    function closePicker() {
+        document.getElementById('customTimePicker').style.display = 'none';
         document.getElementById('overlay').style.display = 'none';
     }
 
-    function confirmCustomTime() {
-        const s = document.getElementById('startH').value;
-        const e = document.getElementById('endH').value;
-        if (parseInt(s) >= parseInt(e)) { alert("時間設定錯誤"); return; }
-        mySchedule[viewingDate] = `${s}:00-${e}:00`;
-        closeMiniPicker();
+    function saveCustomTime() {
+        const timeStr = `${sh.value}:${sm.value}-${eh.value}:${em.value}`;
+        mySchedule[viewingDate] = timeStr;
+        closePicker();
         updateEditUI();
+        renderCalendar();
     }
 
     function handleBtnClick() {
@@ -219,6 +248,9 @@
             document.getElementById('mainBtn').innerText = "SEND SCHEDULE";
             document.getElementById('editOptions').style.display = "block";
             document.getElementById('viewContent').style.display = "none";
+            // 進入編輯模式時，預設選取當前日期
+            mySchedule[viewingDate] = "全天";
+            updateEditUI();
             renderCalendar();
         } else {
             sendToLine();
@@ -228,6 +260,7 @@
     async function sendToLine() {
         try {
             await liff.init({ liffId: "2009607639-kKaZirpP" });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
             const profile = await liff.getProfile();
             const summary = Object.entries(mySchedule).map(([d, t]) => `${d}號(${t})`).join(', ');
             await liff.sendMessages([{ type: 'text', text: `📅 [SSWT 排程更新]\n${profile.displayName} 已回報：\n${summary}` }]);
