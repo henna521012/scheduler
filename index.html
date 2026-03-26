@@ -29,32 +29,20 @@
         .day {
             aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
             font-size: 14px; border-radius: 50%; cursor: pointer; transition: 0.2s;
-            border: 1.5px solid transparent; position: relative;
+            border: 1.5px solid transparent;
         }
         
-        /* 檢視模式：有人填過的樣式 (大地色填滿) */
         .day.has-event { background-color: var(--accent-soft); }
-        
-        /* 編輯模式：有人有空 (大地色粗底線在數字下方) */
-        .day.has-event-underline::after {
-            content: ''; position: absolute; bottom: 4px; left: 20%; width: 60%; height: 3px;
-            background-color: var(--accent-dark); border-radius: 2px;
-        }
-
-        /* 共通：正在選取中的黑色圓框 */
         .day.active-view { border: 1.5px solid #333 !important; font-weight: bold; }
         .day.empty { cursor: default; }
 
-        /* 下方詳細區域 */
         .details-section { border-top: 1px solid #ccc; padding-top: 20px; margin-top: 10px; width: 100%; }
         .day-display { font-size: 40px; font-weight: 300; margin-bottom: 20px; }
 
-        /* 圓角矩形標籤 */
         .time-slots-container { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
         .time-pill { background: var(--accent-soft); padding: 5px 14px; border-radius: 20px; font-size: 12px; color: #555; font-weight: 500; }
 
-        /* 內嵌按鈕樣式 */
-        .time-option-container { display: flex; gap: 10px; margin-top: 10px; margin-bottom: 15px; }
+        .time-option-container { display: flex; gap: 10px; margin-top: 10px; }
         .time-btn {
             background: #fff; border: 1.5px solid var(--accent-soft);
             padding: 8px 16px; border-radius: 20px; font-size: 14px;
@@ -62,11 +50,9 @@
         }
         .time-btn.selected { background: var(--accent-soft); border-color: var(--accent-soft); font-weight: bold; }
 
-        /* 底部按鈕 */
         .btn-fixed { position: fixed; bottom: 30px; width: calc(100% - 40px); max-width: 360px; z-index: 10; }
         .main-action-btn { width: 100%; padding: 16px; background: #333; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; }
 
-        /* 彈窗樣式 */
         #customTimePicker {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: white; padding: 25px; border-radius: 15px;
@@ -89,23 +75,21 @@
 
     <div class="calendar-grid" id="calendar">
         <div class="weekday">Mon</div><div class="weekday">Tue</div><div class="weekday">Wed</div>
-        <div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
+        <div class="weekday = 'Thu'">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
         <div class="weekday">Sun</div>
     </div>
 
     <div class="details-section" id="detailsArea">
         <div class="day-display" id="selectedDateLabel">1</div>
         
-        <div id="editWrapper" style="display:none; margin-bottom:25px; padding-bottom:15px; border-bottom:1px dashed #ddd;">
+        <div id="editWrapper" style="display:none;">
             <p id="editHintLabel" style="font-size:14px; color:#888;">設定這天你有空的時間：</p>
             <div class="time-option-container" id="optionBtns">
                 <div id="btnFull" class="time-btn" onclick="toggleFullDay()">全天</div>
                 <div id="btnCustom" class="time-btn" onclick="openPicker()">自訂時間</div>
             </div>
-            <p id="timeStatus" style="font-size:13px; color:var(--accent-dark); font-weight:500;"></p>
+            <p id="timeStatus" style="font-size:13px; color:var(--accent-dark); margin-top:15px; font-weight:500;"></p>
         </div>
-
-        <div id="editViewContent" style="display:none;"></div>
 
         <div id="viewContent"></div>
     </div>
@@ -138,7 +122,7 @@
     const sh=document.getElementById('sh'), sm=document.getElementById('sm'), eh=document.getElementById('eh'), em=document.getElementById('em');
     for(let i=0;i<24;i++){ let v=i.toString().padStart(2,'0'); sh.innerHTML+=`<option value="${v}">${v}</option>`; eh.innerHTML+=`<option value="${v}">${v}</option>`; }
     for(let i=0;i<60;i+=15){ let v=i.toString().padStart(2,'0'); sm.innerHTML+=`<option value="${v}">${v}</option>`; em.innerHTML+=`<option value="${v}">${v}</option>`; }
-    sh.value="08"; sm.value="30"; eh.value="21"; em.value="45";
+    sh.value="19"; sm.value="00"; eh.value="22"; em.value="00";
 
     function renderCalendar() {
         const calendarEl = document.getElementById('calendar');
@@ -151,28 +135,19 @@
         for (let i = 1; i <= 30; i++) {
             const d = document.createElement('div');
             d.className = 'day'; d.innerText = i;
-            
-            // 黑色圓框：當前選中
             if (i === viewingDate) d.classList.add('active-view');
-            
-            if (!isEditMode) {
-                // 檢視模式：有人填過的樣式 (大地色填滿)
-                if (mockData[i]) d.classList.add('has-event');
-            } else {
-                // 編輯模式：有人有空 (大地色粗底線在數字下方)
-                if (mockData[i]) d.classList.add('has-event-underline');
-            }
+            if (!isEditMode && mockData[i]) d.classList.add('has-event');
+            if (isEditMode && mySchedule[i]) d.classList.add('has-event');
 
             d.onclick = () => {
                 if (isEditMode && viewingDate === i && mySchedule[i]) {
-                    delete mySchedule[i]; // 取消選取
+                    delete mySchedule[i]; // 再次點擊取消
                 } else {
                     viewingDate = i;
-                    // 編輯模式下，只要點到，預設全天大地色填滿
                     if (isEditMode && !mySchedule[i]) mySchedule[i] = "全天";
                 }
                 document.getElementById('selectedDateLabel').innerText = viewingDate;
-                isEditMode ? updateEditUI(viewingDate) : updateViewUI(viewingDate);
+                isEditMode ? updateEditUI() : updateViewUI(viewingDate);
                 renderCalendar();
             };
             calendarEl.appendChild(d);
@@ -182,7 +157,7 @@
     function updateViewUI(date) {
         const content = document.getElementById('viewContent');
         const data = mockData[date];
-        if (!data) { content.innerHTML = `<p style="color:#bbb; font-size:14px;">這天暫時沒人回報</p>`; return; }
+        if (!data) { content.innerHTML = `<p style="color:#bbb; font-size:14px;">這天暫時沒人回報～</p>`; return; }
         content.innerHTML = data.map(user => `
             <div style="margin-bottom:15px;">
                 <div style="font-weight:500;">${user.name} 有空</div>
@@ -191,54 +166,37 @@
         `).join('');
     }
 
-    function updateEditUI(date) {
-        const status = mySchedule[date];
+    function updateEditUI() {
+        const status = mySchedule[viewingDate];
         const editWrapper = document.getElementById('editWrapper');
         const statusText = document.getElementById('timeStatus');
         const btnFull = document.getElementById('btnFull');
         const btnCustom = document.getElementById('btnCustom');
-        const editViewContent = document.getElementById('editViewContent');
 
-        // 更新自己的設定區塊
         if (!status) {
-            editWrapper.style.display = "none";
-        } else {
-            editWrapper.style.display = "block";
-            btnFull.classList.toggle('selected', status === "全天");
-            btnCustom.classList.toggle('selected', status !== "全天");
-            statusText.innerText = `當前設定：${status}`;
+            editWrapper.style.display = "none"; // 規則：取消選取後整個標籤都要不見
+            return;
         }
 
-        // 無論有沒有設定自己的時間，都要顯示 MockData (大家的時間)
-        const data = mockData[date];
-        if (!data) {
-            editViewContent.innerHTML = `<p style="color:#bbb; font-size:13px; font-style:italic;">其他人尚未設定排程</p>`;
-        } else {
-            editViewContent.innerHTML = `
-                <p style="font-size:14px; color:#888; margin-bottom:10px;">成員排程：</p>
-                ${data.map(user => `
-                    <div style="margin-bottom:15px; font-size:14px;">
-                        <div style="font-weight:500;">🖤 ${user.name} 有空</div>
-                        <div class="time-slots-container">${user.time.map(t => `<div class="time-pill" style="font-size:11px;">${t}</div>`).join('')}</div>
-                    </div>
-                `).join('')}
-            `;
-        }
+        editWrapper.style.display = "block";
+        btnFull.classList.toggle('selected', status === "全天");
+        btnCustom.classList.toggle('selected', status !== "全天");
+        statusText.innerText = `當前設定：${status}`;
     }
 
-    function toggleFullDay() { mySchedule[viewingDate] = "全天"; updateEditUI(viewingDate); renderCalendar(); }
+    function toggleFullDay() { mySchedule[viewingDate] = "全天"; updateEditUI(); renderCalendar(); }
     function openPicker() { document.getElementById('customTimePicker').style.display = 'block'; document.getElementById('overlay').style.display = 'block'; }
     function closePicker() { document.getElementById('customTimePicker').style.display = 'none'; document.getElementById('overlay').style.display = 'none'; }
-    function saveCustomTime() { mySchedule[viewingDate] = `${sh.value}:${sm.value}-${eh.value}:${em.value}`; closePicker(); updateEditUI(viewingDate); renderCalendar(); }
+    function saveCustomTime() { mySchedule[viewingDate] = `${sh.value}:${sm.value}-${eh.value}:${em.value}`; closePicker(); updateEditUI(); renderCalendar(); }
 
     function handleBtnClick() {
         if (!isEditMode) {
             isEditMode = true;
             document.getElementById('mainBtn').innerText = "SEND SCHEDULE";
+            document.getElementById('editWrapper').style.display = "block";
             document.getElementById('viewContent').style.display = "none";
-            document.getElementById('editViewContent').style.display = "block"; // 顯示編輯模式的 MockData
             mySchedule[viewingDate] = "全天";
-            updateEditUI(viewingDate);
+            updateEditUI();
         } else {
             sendToLine();
         }
