@@ -122,7 +122,7 @@
     const sh=document.getElementById('sh'), sm=document.getElementById('sm'), eh=document.getElementById('eh'), em=document.getElementById('em');
     for(let i=0;i<24;i++){ let v=i.toString().padStart(2,'0'); sh.innerHTML+=`<option value="${v}">${v}</option>`; eh.innerHTML+=`<option value="${v}">${v}</option>`; }
     for(let i=0;i<60;i+=15){ let v=i.toString().padStart(2,'0'); sm.innerHTML+=`<option value="${v}">${v}</option>`; em.innerHTML+=`<option value="${v}">${v}</option>`; }
-    sh.value="08"; sm.value="30"; eh.value="21"; em.value="45";
+    sh.value="19"; sm.value="00"; eh.value="22"; em.value="00";
 
     function renderCalendar() {
         const calendarEl = document.getElementById('calendar');
