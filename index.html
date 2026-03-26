@@ -3,99 +3,64 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>February Schedule</title>
+    <title>April Schedule</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
         :root {
             --bg-color: #f2f2f2;
-            --card-bg: #ffffff;
             --text-main: #333333;
-            --accent-soft: #e8e1da; /* 參考圖中的圓圈淺色 */
+            --accent-soft: #e8e1da; /* 大地色填滿 */
             --accent-dark: #a89a8e;
-            --selected-bg: #d0c4b9;
         }
 
         body { 
             font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; 
-            background-color: var(--bg-color); 
-            color: var(--text-main);
-            margin: 0; padding: 20px;
-            display: flex; flex-direction: column; align-items: center;
+            background-color: var(--bg-color); color: var(--text-main);
+            margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center;
         }
 
         .container { width: 100%; max-width: 400px; }
+        .month-header { text-align: center; font-size: 32px; letter-spacing: 2px; font-weight: 300; margin: 0; }
+        .year-label { text-align: right; font-size: 14px; color: #888; margin-bottom: 20px; }
 
-        /* 月份標題 */
-        .month-header {
-            text-align: center;
-            font-size: 32px;
-            letter-spacing: 2px;
-            margin-bottom: 5px;
-            font-weight: 300;
-        }
-        .year-label {
-            text-align: right;
-            font-size: 14px;
-            color: #888;
-            margin-bottom: 20px;
-        }
-
-        /* 日曆網格 */
         .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 10px;
-            text-align: center;
-            margin-bottom: 30px;
+            display: grid; grid-template-columns: repeat(7, 1fr);
+            gap: 10px; text-align: center; margin-bottom: 30px;
         }
         .weekday { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* 基礎日期樣式 */
         .day {
-            aspect-ratio: 1;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 14px; border-radius: 50%;
-            cursor: pointer; transition: 0.3s;
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; border-radius: 50%; cursor: pointer; transition: 0.2s;
+            border: 1.5px solid transparent;
         }
+
+        /* 檢視模式：有人有空的日期 (大地色填滿) */
         .day.has-event { background-color: var(--accent-soft); }
-        .day.selected { 
-            background-color: transparent;
-            border: 1.5px solid #333; 
-            font-weight: bold;
-        }
+
+        /* 正在查看/選取中的日期 (黑色無填滿圈圈) */
+        .day.active-view { border-color: #333; font-weight: bold; }
+
         .day.empty { cursor: default; }
 
-        /* 下方詳細清單 */
-        .details-section {
-            border-top: 1px solid #ccc;
-            padding-top: 20px;
-            margin-top: 10px;
-        }
+        /* 下方區塊 */
+        .details-section { border-top: 1px solid #ccc; padding-top: 20px; margin-top: 10px; }
         .day-display { font-size: 40px; font-weight: 300; margin-bottom: 20px; }
-
-        .event-item {
-            display: flex;
-            align-items: flex-start;
-            margin-bottom: 15px;
-            font-size: 15px;
-        }
-        .event-icon { margin-right: 15px; font-size: 18px; }
+        .event-item { display: flex; align-items: flex-start; margin-bottom: 15px; font-size: 15px; }
+        .event-icon { margin-right: 15px; }
         .event-content { border-bottom: 1px solid #eee; width: 100%; padding-bottom: 10px; }
+        .time-slot { background: var(--accent-soft); display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 12px; margin-top: 8px; }
 
-        .time-slot {
-            background: var(--accent-soft);
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 12px;
-            margin-top: 8px;
-        }
+        /* 編輯模式提示 */
+        #editHint { display: none; color: var(--accent-dark); font-size: 13px; margin-bottom: 10px; text-align: center; }
 
-        /* 按鈕區 */
+        /* 按鈕樣式 */
         .btn-group { margin-top: 40px; }
         button {
-            width: 100%; padding: 12px;
-            background: #333; color: white;
-            border: none; border-radius: 5px;
-            font-size: 14px; letter-spacing: 1px;
+            width: 100%; padding: 16px; background: #333; color: white;
+            border: none; border-radius: 5px; font-size: 14px; letter-spacing: 1px;
+            cursor: pointer; font-weight: bold;
         }
     </style>
 </head>
@@ -105,72 +70,143 @@
     <div class="month-header">April</div>
     <div class="year-label">2026</div>
 
+    <div id="editHint">請選取你有空的日期（可多選）</div>
+
     <div class="calendar-grid" id="calendar">
         <div class="weekday">Mon</div><div class="weekday">Tue</div><div class="weekday">Wed</div>
         <div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
         <div class="weekday">Sun</div>
     </div>
 
-    <div class="details-section" id="details">
-        <div class="day-display" id="selectedDateLabel">11</div>
-        
-        <div class="event-item">
-            <div class="event-icon">🖤</div>
-            <div class="event-content">
-                <div>函庭 有空</div>
-                <div class="time-slot">全天</div>
+    <div class="details-section" id="detailsArea">
+        <div class="day-display" id="selectedDateLabel">1</div>
+        <div id="eventList">
             </div>
-        </div>
-
-        <div class="event-item">
-            <div class="event-icon">✔️</div>
-            <div class="event-content">
-                <div>春夏秋冬 成員 A</div>
-                <div class="time-slot">8am-10am | 2pm-5pm</div>
-            </div>
-        </div>
     </div>
 
     <div class="btn-group">
-        <button onclick="sendData()">SEND SCHEDULE</button>
+        <button id="mainBtn" onclick="handleBtnClick()">EDIT MY TIME</button>
     </div>
 </div>
 
 <script>
-    let currentSelected = 11;
-    const calendarEl = document.getElementById('calendar');
+    let isEditMode = false;
+    let viewingDate = 1; // 檢視模式下正在看的日期
+    let selectedDates = []; // 編輯模式下選取的日期
+    const hasEventDates = [3, 12, 13, 14, 24]; // 模擬已有資料的日期
 
-    // 初始化日曆 (2026/4/1 is Wed)
-    for (let s = 0; s < 2; s++) {
-        const d = document.createElement('div'); d.className = 'day empty';
-        calendarEl.appendChild(d);
+    function renderCalendar() {
+        const calendarEl = document.getElementById('calendar');
+        // 清除舊的日期（保留星期標頭）
+        const headers = calendarEl.querySelectorAll('.weekday');
+        calendarEl.innerHTML = '';
+        headers.forEach(h => calendarEl.appendChild(h));
+
+        // 2026/4/1 is Wed (Mon, Tue 空格)
+        for (let s = 0; s < 2; s++) {
+            const d = document.createElement('div'); d.className = 'day empty';
+            calendarEl.appendChild(d);
+        }
+
+        for (let i = 1; i <= 30; i++) {
+            const d = document.createElement('div');
+            d.className = 'day';
+            d.innerText = i;
+
+            if (isEditMode) {
+                // 編輯模式邏輯
+                if (selectedDates.includes(i)) d.classList.add('active-view');
+                d.onclick = () => {
+                    if (selectedDates.includes(i)) {
+                        selectedDates = selectedDates.filter(item => item !== i);
+                    } else {
+                        selectedDates.push(i);
+                    }
+                    renderCalendar();
+                };
+            } else {
+                // 檢視模式邏輯
+                if (hasEventDates.includes(i)) d.classList.add('has-event');
+                if (i === viewingDate) d.classList.add('active-view');
+                d.onclick = () => {
+                    viewingDate = i;
+                    document.getElementById('selectedDateLabel').innerText = i;
+                    updateDetails(i);
+                    renderCalendar();
+                };
+            }
+            calendarEl.appendChild(d);
+        }
     }
 
-    for (let i = 1; i <= 30; i++) {
-        const d = document.createElement('div');
-        d.className = 'day';
-        if ([3, 12, 13, 14, 24].includes(i)) d.classList.add('has-event');
-        if (i === currentSelected) d.classList.add('selected');
-        d.innerText = i;
-        d.onclick = () => {
-            document.querySelectorAll('.day').forEach(el => el.classList.remove('selected'));
-            d.classList.add('selected');
-            currentSelected = i;
-            document.getElementById('selectedDateLabel').innerText = i;
-        };
-        calendarEl.appendChild(d);
+    function updateDetails(date) {
+        const list = document.getElementById('eventList');
+        if (hasEventDates.includes(date)) {
+            list.innerHTML = `
+                <div class="event-item">
+                    <div class="event-icon">🖤</div>
+                    <div class="event-content"><div>函庭 有空</div><div class="time-slot">全天</div></div>
+                </div>
+                <div class="event-item">
+                    <div class="event-icon">✔️</div>
+                    <div class="event-content"><div>成員 A</div><div class="time-slot">8am-10am | 2pm-5pm</div></div>
+                </div>`;
+        } else {
+            list.innerHTML = `<p style="color:#bbb; font-size:14px;">暫無人回報排程</p>`;
+        }
     }
 
-    async function sendData() {
-        await liff.init({ liffId: "2009607639-kKaZirpP" });
-        if (!liff.isLoggedIn()) { liff.login(); return; }
-        
-        const profile = await liff.getProfile();
-        liff.sendMessages([{
-            type: 'text',
-            text: `📅 [SSWT 狀態更新]\n${profile.displayName} 已確認 4/${currentSelected} 排程：全天有空`
-        }]).then(() => liff.closeWindow());
+    function handleBtnClick() {
+        const btn = document.getElementById('mainBtn');
+        const details = document.getElementById('detailsArea');
+        const hint = document.getElementById('editHint');
+
+        if (!isEditMode) {
+            // 切換到編輯模式
+            isEditMode = true;
+            btn.innerText = "SEND SCHEDULE";
+            details.style.display = "none";
+            hint.style.display = "block";
+            selectedDates = []; // 清空上次選取
+            renderCalendar();
+        } else {
+            // 執行送出
+            if (selectedDates.length === 0) {
+                alert("請至少選取一天！");
+                return;
+            }
+            sendToLine();
+        }
     }
+
+    async function sendToLine() {
+        try {
+            await liff.init({ liffId: "2009607639-kKaZirpP" });
+            if (!liff.isLoggedIn()) { liff.login(); return; }
+            
+            const profile = await liff.getProfile();
+            selectedDates.sort((a,b) => a-b);
+            
+            await liff.sendMessages([{
+                type: 'text',
+                text: `📅 [SSWT 排程更新]\n${profile.displayName} 已更新 4 月份有空日期：\n${selectedDates.join(', ')} 號`
+            }]);
+            
+            // 送出後回到檢視模式 (Demo 用，實際上 closeWindow 更好)
+            isEditMode = false;
+            document.getElementById('mainBtn').innerText = "EDIT MY TIME";
+            document.getElementById('detailsArea').style.display = "block";
+            document.getElementById('editHint').style.display = "none";
+            renderCalendar();
+            liff.closeWindow();
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // 初次渲染
+    renderCalendar();
+    updateDetails(1);
 </script>
 
 </body>
