@@ -11,7 +11,7 @@
             --text-main: #333333;
             --accent-soft: #e8e1da;
             --accent-dark: #a89a8e;
-            --accent-border: #8d7d70; /* 較深的大地色，用於外框 */
+            --accent-border: #8d7d70;
         }
 
         body { 
@@ -33,15 +33,9 @@
             border: 1.5px solid transparent; position: relative;
         }
         
-        /* 規則：原本已填的大地色背景 */
         .day.has-event { background-color: var(--accent-soft); }
-
-        /* 規則 2：編輯模式下，其他人有空的日期顯示深大地色無填滿圓框 */
         .day.has-mock-border { border: 1.5px solid var(--accent-border); }
-
-        /* 規則：選取中的黑色圓框 (使用 box-shadow 避免與 border 衝突) */
         .day.active-view { box-shadow: inset 0 0 0 1.5px #333; font-weight: bold; }
-
         .day.empty { cursor: default; }
 
         .details-section { border-top: 1px solid #ccc; padding-top: 20px; margin-top: 10px; width: 100%; }
@@ -57,6 +51,14 @@
             color: var(--text-main); cursor: pointer; transition: 0.2s;
         }
         .time-btn.selected { background: var(--accent-soft); border-color: var(--accent-soft); font-weight: bold; }
+
+        /* 淺色分隔線樣式 */
+        .divider {
+            border: 0;
+            height: 1px;
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0));
+            margin: 25px 0;
+        }
 
         .btn-fixed { position: fixed; bottom: 30px; width: calc(100% - 40px); max-width: 360px; z-index: 10; }
         .main-action-btn { width: 100%; padding: 16px; background: #333; color: white; border: none; border-radius: 5px; font-size: 14px; font-weight: bold; }
@@ -98,6 +100,8 @@
             </div>
             <p id="timeStatus" style="font-size:13px; color:var(--accent-dark); margin-top:15px; font-weight:500;"></p>
         </div>
+
+        <div id="dividerLine"></div>
 
         <div id="viewContent"></div>
     </div>
@@ -143,14 +147,8 @@
         for (let i = 1; i <= 30; i++) {
             const d = document.createElement('div');
             d.className = 'day'; d.innerText = i;
-
-            // 規則 2：編輯模式下，有 Mock Data 的日期顯示深大地色框
             if (isEditMode && mockData[i]) d.classList.add('has-mock-border');
-
-            // 規則：正在查看的日期顯示黑色框 (使用內縮 shadow 確保與 border 共存)
             if (i === viewingDate) d.classList.add('active-view');
-
-            // 顯示邏輯
             if (!isEditMode && mockData[i]) d.classList.add('has-event');
             if (isEditMode && mySchedule[i]) d.classList.add('has-event');
 
@@ -187,16 +185,18 @@
         const statusText = document.getElementById('timeStatus');
         const btnFull = document.getElementById('btnFull');
         const btnCustom = document.getElementById('btnCustom');
+        const divider = document.getElementById('dividerLine');
 
-        // 規則 1：編輯模式下依然在下方渲染其他人時間
         updateViewUI(viewingDate);
 
         if (!status) {
             editWrapper.style.display = "none";
+            divider.innerHTML = ""; // 沒有當前設定，就不顯示線
             return;
         }
 
         editWrapper.style.display = "block";
+        divider.innerHTML = '<hr class="divider">'; // 插入分隔線
         btnFull.classList.toggle('selected', status === "全天");
         btnCustom.classList.toggle('selected', status !== "全天");
         statusText.innerText = `當前設定：${status}`;
