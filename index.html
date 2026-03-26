@@ -11,6 +11,7 @@
             --text-main: #333333;
             --accent-soft: #e8e1da;
             --accent-dark: #a89a8e;
+            --accent-border: #8d7d70; /* 較深的大地色，用於外框 */
         }
 
         body { 
@@ -29,11 +30,18 @@
         .day {
             aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
             font-size: 14px; border-radius: 50%; cursor: pointer; transition: 0.2s;
-            border: 1.5px solid transparent;
+            border: 1.5px solid transparent; position: relative;
         }
         
+        /* 規則：原本已填的大地色背景 */
         .day.has-event { background-color: var(--accent-soft); }
-        .day.active-view { border: 1.5px solid #333 !important; font-weight: bold; }
+
+        /* 規則 2：編輯模式下，其他人有空的日期顯示深大地色無填滿圓框 */
+        .day.has-mock-border { border: 1.5px solid var(--accent-border); }
+
+        /* 規則：選取中的黑色圓框 (使用 box-shadow 避免與 border 衝突) */
+        .day.active-view { box-shadow: inset 0 0 0 1.5px #333; font-weight: bold; }
+
         .day.empty { cursor: default; }
 
         .details-section { border-top: 1px solid #ccc; padding-top: 20px; margin-top: 10px; width: 100%; }
@@ -75,7 +83,7 @@
 
     <div class="calendar-grid" id="calendar">
         <div class="weekday">Mon</div><div class="weekday">Tue</div><div class="weekday">Wed</div>
-        <div class="weekday = 'Thu'">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
+        <div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div>
         <div class="weekday">Sun</div>
     </div>
 
@@ -135,13 +143,20 @@
         for (let i = 1; i <= 30; i++) {
             const d = document.createElement('div');
             d.className = 'day'; d.innerText = i;
+
+            // 規則 2：編輯模式下，有 Mock Data 的日期顯示深大地色框
+            if (isEditMode && mockData[i]) d.classList.add('has-mock-border');
+
+            // 規則：正在查看的日期顯示黑色框 (使用內縮 shadow 確保與 border 共存)
             if (i === viewingDate) d.classList.add('active-view');
+
+            // 顯示邏輯
             if (!isEditMode && mockData[i]) d.classList.add('has-event');
             if (isEditMode && mySchedule[i]) d.classList.add('has-event');
 
             d.onclick = () => {
                 if (isEditMode && viewingDate === i && mySchedule[i]) {
-                    delete mySchedule[i]; // 再次點擊取消
+                    delete mySchedule[i]; 
                 } else {
                     viewingDate = i;
                     if (isEditMode && !mySchedule[i]) mySchedule[i] = "全天";
@@ -157,7 +172,7 @@
     function updateViewUI(date) {
         const content = document.getElementById('viewContent');
         const data = mockData[date];
-        if (!data) { content.innerHTML = `<p style="color:#bbb; font-size:14px;">這天暫時沒人回報～</p>`; return; }
+        if (!data) { content.innerHTML = `<p style="color:#bbb; font-size:14px;">這天暫時沒人回報</p>`; return; }
         content.innerHTML = data.map(user => `
             <div style="margin-bottom:15px;">
                 <div style="font-weight:500;">${user.name} 有空</div>
@@ -173,8 +188,11 @@
         const btnFull = document.getElementById('btnFull');
         const btnCustom = document.getElementById('btnCustom');
 
+        // 規則 1：編輯模式下依然在下方渲染其他人時間
+        updateViewUI(viewingDate);
+
         if (!status) {
-            editWrapper.style.display = "none"; // 規則：取消選取後整個標籤都要不見
+            editWrapper.style.display = "none";
             return;
         }
 
@@ -193,8 +211,6 @@
         if (!isEditMode) {
             isEditMode = true;
             document.getElementById('mainBtn').innerText = "SEND SCHEDULE";
-            document.getElementById('editWrapper').style.display = "block";
-            document.getElementById('viewContent').style.display = "none";
             mySchedule[viewingDate] = "全天";
             updateEditUI();
         } else {
